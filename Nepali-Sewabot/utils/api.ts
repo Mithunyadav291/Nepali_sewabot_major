@@ -2,8 +2,7 @@ import { useAuth } from "@clerk/clerk-expo";
 import axios, {AxiosInstance} from "axios"
 import { getBaseUrl } from "./apiBaseUrl";
 
-// const API_BASE_URL="https://social-media-zeta-sandy.vercel.app/api"
-// const API_BASE_URL = "http://localhost:3001/api";
+// const API_BASE_URL="https://nepali-sewabot-api.onrender.com/api"
 const API_BASE_URL=getBaseUrl()
 console.log(API_BASE_URL)
 
@@ -38,4 +37,5 @@ export const useApiClient = (): AxiosInstance => {
 export const userApi = {
   syncUser: (api: AxiosInstance) => api.post("/user/sync"),
   getCurrentUser: (api: AxiosInstance) => api.get("/user/me"),
+   updateProfile: (api: AxiosInstance, data: any) => api.put("/user/updateProfile", data),
 }

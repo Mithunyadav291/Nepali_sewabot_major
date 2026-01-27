@@ -14,12 +14,10 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Markdown from "react-native-markdown-display";
-import { demoMessages } from "./demo";
 import { scale } from "react-native-size-matters";
 import axios from "axios";
 import * as SQLite from "expo-sqlite";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useAuthStore } from "@/utils/authStore";
 
 const db = SQLite.openDatabaseSync("chat.db");
 
@@ -40,9 +38,8 @@ const ChatScreen = () => {
   const [hasUsedFirstMessage, setHasUsedFirstMessage] = useState(false);
   const [loadedFromHistory, setLoadedFromHistory] = useState(false);
 
-  // const { currentUser } = useCurrentUser();
-  const { user } = useAuthStore();
-  const tableName = `messages_${user?._id}`;
+  const { currentUser } = useCurrentUser();
+  const tableName = `messages_${currentUser?._id}`;
 
   //scroll to bottom when new message arrives
   useEffect(() => {
@@ -60,7 +57,7 @@ const ChatScreen = () => {
       if (!sessionIdFromHistory) return;
       const rows = await db.getAllAsync(
         `SELECT * FROM ${tableName} WHERE session_id = ? ORDER BY id ASC`,
-        [sessionIdFromHistory]
+        [sessionIdFromHistory],
       );
       setMessages(rows);
       setHistory(rows);
@@ -91,7 +88,7 @@ const ChatScreen = () => {
           latestMessage.content,
           timestamp,
           sessionId || sessionIdFromHistory,
-        ]
+        ],
       );
 
       // console.log("💾 Message inserted after timeout:", latestMessage.content);
@@ -215,7 +212,7 @@ const ChatScreen = () => {
             Authorization: `Bearer ${APIKey}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       return response.data.output[0].content[0].text;

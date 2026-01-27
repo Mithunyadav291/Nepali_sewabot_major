@@ -28,7 +28,8 @@ export const getBaseUrl=()=>{
 
 
 const axiosInstance = axios.create({
-  baseURL: getBaseUrl(),
+  // baseURL: getBaseUrl() ,
+  baseURL: "https://nepali-sewabot-api.onrender.com/api",
   withCredentials: true,
   timeout: 10000,
 });

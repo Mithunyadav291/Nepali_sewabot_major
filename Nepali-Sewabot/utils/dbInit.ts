@@ -3,7 +3,7 @@ import * as SQLite from 'expo-sqlite'
 export const db = SQLite.openDatabaseSync("chat.db");
 
 export const initializeDB = async (userId:string) => {
-  console.log("userId:",userId)
+  // console.log("userId:",userId)
   const tableName = `messages_${userId}`;
   try {
     await db.execAsync(`

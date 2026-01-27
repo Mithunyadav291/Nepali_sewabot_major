@@ -19,9 +19,9 @@ import SignOutButton from "@/components/SignOutButton";
 import { ActivityIndicator } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
-import { useAuthStore } from "@/utils/authStore";
 import { useProfile } from "@/hooks/useUpdateProfile";
 import EditProfileModal from "@/components/EditProfileModal";
+import Constants from "expo-constants";
 
 const ProfileScreen = () => {
   const [darkMode, setDarkMode] = useState(false);
@@ -34,26 +34,26 @@ const ProfileScreen = () => {
 
   const [refreshing, setRefreshing] = useState(false);
 
-  // const { currentUser, isLoading, error, refetch } = useCurrentUser();
-  const { user, loading, fetchUserProfile } = useAuthStore();
+  const { currentUser: user, isLoading, refetch } = useCurrentUser();
   useEffect(() => {
-    fetchUserProfile();
+    refetch();
   }, [!user]);
 
   const {
     isEditModalVisible,
-    formData,
     openEditModal,
     closeEditModal,
-    updateFormField,
+    formData,
     saveProfile,
     isUpdating,
+    updateFormField,
+    // refetch: refetchProfile,
   } = useProfile();
 
   const onRefresh = async () => {
     try {
       setRefreshing(true);
-      await fetchUserProfile(); // re-fetch user
+      await refetch(); // re-fetch user
     } catch (error) {
       console.log("Refresh failed:", error);
     } finally {
@@ -67,7 +67,7 @@ const ProfileScreen = () => {
     else Alert.alert("Error", "Unable to open link.");
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View className="flex-1 bg-white items-center justify-center">
         <ActivityIndicator size="large" color="#1DA1F2" />
@@ -288,7 +288,7 @@ const ProfileScreen = () => {
                     style={styles.menuRow}
                     onPress={() =>
                       openURL(
-                        "https://play.google.com/store/apps/details?id=yourapp"
+                        "https://play.google.com/store/apps/details?id=yourapp",
                       )
                     }
                   >
@@ -305,8 +305,7 @@ const ProfileScreen = () => {
                     />
                     <Text style={styles.menuText}>Version</Text>
                     <Text style={[styles.menuText, { marginLeft: "auto" }]}>
-                      {/* {Constants.expoConfig?.version || "1.0.0"} */}
-                      1.1.1
+                      {Constants.expoConfig?.version || "1.0.0"}
                     </Text>
                   </View>
                 </View>

@@ -22,7 +22,6 @@ import Reload from "@/assets/svgs/reload";
 
 import * as SQLite from "expo-sqlite";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useAuthStore } from "@/utils/authStore";
 
 const db = SQLite.openDatabaseSync("chat.db");
 
@@ -44,9 +43,8 @@ const VoiceScreen = () => {
   const [messages, setMessages] = useState([]);
   const [history, setHistory] = useState([]);
 
-  // const { currentUser } = useCurrentUser();
-  const { user } = useAuthStore();
-  const tableName = `messages_${user?._id}`;
+  const { currentUser } = useCurrentUser();
+  const tableName = `messages_${currentUser?._id}`;
 
   useEffect(() => {
     const backAction = () => {
@@ -59,7 +57,7 @@ const VoiceScreen = () => {
 
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
-      backAction
+      backAction,
     );
 
     return () => backHandler.remove();
@@ -80,7 +78,7 @@ const VoiceScreen = () => {
 
       const rec = new Audio.Recording();
       await rec.prepareToRecordAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
+        Audio.RecordingOptionsPresets.HIGH_QUALITY,
       );
       await rec.startAsync();
 
@@ -149,7 +147,7 @@ const VoiceScreen = () => {
       const arrayBuffer = await audioRes.arrayBuffer();
 
       // const AAI_KEY = process.env.ASSEMBLYAI_KEY;
-      console.log("AAI_KEY:", AAI_KEY);
+      // console.log("AAI_KEY:", AAI_KEY);
       const uploadRes = await axios.post(
         "https://api.assemblyai.com/v2/upload",
         arrayBuffer,
@@ -158,7 +156,7 @@ const VoiceScreen = () => {
             authorization: AAI_KEY,
             "content-type": "application/octet-stream",
           },
-        }
+        },
       );
 
       /* 2️⃣ Create transcript */
@@ -175,7 +173,7 @@ const VoiceScreen = () => {
             authorization: AAI_KEY,
             "content-type": "application/json",
           },
-        }
+        },
       );
 
       const transcriptId = transcriptRes.data.id;
@@ -184,7 +182,7 @@ const VoiceScreen = () => {
       while (true) {
         const res = await axios.get(
           `https://api.assemblyai.com/v2/transcript/${transcriptId}`,
-          { headers: { authorization: AAI_KEY } }
+          { headers: { authorization: AAI_KEY } },
         );
 
         if (res.data.status === "completed") {
@@ -237,7 +235,7 @@ const VoiceScreen = () => {
             Authorization: `Bearer ${APIKey}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       const aiText = response.data?.output?.[0]?.content?.[0]?.text ?? "";
@@ -304,7 +302,7 @@ const VoiceScreen = () => {
           latestMessage.content,
           timestamp,
           sessionId || sessionIdFromHistory,
-        ]
+        ],
       );
 
       // console.log("💾 Message inserted after timeout:", latestMessage.content);

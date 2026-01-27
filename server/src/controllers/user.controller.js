@@ -1,86 +1,137 @@
 import asyncHandler from "express-async-handler";
 import User from "../models/user.model.js";
-import generateToken from "../middleware/generateToken.js";
+// import generateToken from "../middleware/generateToken.js";
+import { getAuth, clerkClient } from "@clerk/express";
 
-export const syncUser = async (req, res) => {
-  try {
-    const { clerkId, email, firstname, lastname, profilePicture } = req.body;
+export const syncUser = asyncHandler(async (req, res) => {
+  const { userId } = getAuth(req);
+  // console.log("userid:", userId);
 
-    if (!clerkId || !email || !firstname || !lastname) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    const baseUsername = email.split("@")[0];
-    let username = baseUsername;
-
-    const existingUser = await User.findOne({ clerkId });
-    if (existingUser) {
-      // 🔐 generate token for existing user
-      const token = generateToken(clerkId, res);
-      console.log("user already exists");
-      return res.status(200).json({
-        user: existingUser,
-        token,
-        message: "User already exists",
-      });
-    }
-    //create new user from clerk data
-    const user = await User.create({
-      clerkId,
-      email,
-      firstname,
-      lastname,
-      username,
-      profilePicture,
-    });
-    const token = generateToken(clerkId, res);
-    console.log("user created successfully");
-    res.status(201).json({
-      user,
-      token,
-      message: "User created successfully",
-    });
-  } catch (error) {
-    console.error("Auth error:", error);
-    res.status(500).json({ message: "Internal server error" });
+  //check if user already exists
+  const exitingUser = await User.findOne({ clerkId: userId });
+  if (exitingUser) {
+    return res
+      .status(200)
+      .json({ user: exitingUser, message: "User already exists" });
   }
-};
 
-export const getCurrentUser = asyncHandler(async (req, res) => {
-  const user = req.user;
+  //create new user from clerk data
+  const clerkUser = await clerkClient.users.getUser(userId);
 
-  if (!user) return res.status(404).json({ error: "User not found" });
-  console.log("successfully fetched current user");
-  res.status(201).json({ user, message: "User fetched successfully" });
+  const userData = {
+    clerkId: userId,
+    email: clerkUser.emailAddresses[0].emailAddress,
+    firstname: clerkUser.firstName || "",
+    lastname: clerkUser.lastName || "",
+    username: clerkUser.emailAddresses[0].emailAddress.split("@")[0],
+    profilePicture: clerkUser.imageUrl || "",
+  };
+
+  const user = await User.create(userData);
+  res.status(201).json({ user, message: "User created successfully" });
 });
 
-export const updateProfile = async (req, res) => {
-  try {
-    const user = req.user;
+export const getCurrentUser = asyncHandler(async (req, res) => {
+  const { userId } = getAuth(req);
 
-    const { firstname, lastname, bio, location, username } = req.body;
+  const user = await User.findOne({ clerkId: userId });
 
-    const updatedUser = await User.findOneAndUpdate(
-      { clerkId: user.clerkId },
-      {
-        $set: {
-          ...(firstname && { firstname }),
-          ...(lastname && { lastname }),
-          ...(bio !== undefined && { bio }),
-          ...(location !== undefined && { location }),
-          ...(username && { username }),
-        },
-      },
-      { new: true }
-    );
+  if (!user) return res.status(404).json({ error: "User not found" });
 
-    if (!updatedUser) {
-      return res.status(404).json({ error: "User not found" });
-    }
-    console.log("Profile updated successfully");
-    res.json({ user: updatedUser, message: "Profile updated successfully" });
-  } catch (error) {
-    console.error("Update profile error:", error);
-    res.status(500).json({ error: "Failed to update profile" });
-  }
-};
+  res.status(200).json({ user });
+});
+
+export const updateProfile = asyncHandler(async (req, res) => {
+  const { userId } = getAuth(req);
+
+  const user = await User.findOneAndUpdate({ clerkId: userId }, req.body, {
+    new: true,
+  });
+
+  if (!user) return res.status(404).json({ error: "User not found" });
+
+  res.status(200).json({ user });
+});
+
+// export const syncUser = async (req, res) => {
+//   try {
+//     const { clerkId, email, firstname, lastname, profilePicture } = req.body;
+
+//     if (!clerkId || !email || !firstname || !lastname) {
+//       return res.status(400).json({ message: "Missing required fields" });
+//     }
+
+//     const baseUsername = email.split("@")[0];
+//     let username = baseUsername;
+
+//     const existingUser = await User.findOne({ clerkId });
+//     if (existingUser) {
+//       // 🔐 generate token for existing user
+//       const token = generateToken(clerkId, res);
+//       console.log("user already exists");
+//       return res.status(200).json({
+//         user: existingUser,
+//         token,
+//         message: "User already exists",
+//       });
+//     }
+//     //create new user from clerk data
+//     const user = await User.create({
+//       clerkId,
+//       email,
+//       firstname,
+//       lastname,
+//       username,
+//       profilePicture,
+//     });
+//     const token = generateToken(clerkId, res);
+//     console.log("user created successfully");
+//     res.status(201).json({
+//       user,
+//       token,
+//       message: "User created successfully",
+//     });
+//   } catch (error) {
+//     console.error("Auth error:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+
+// export const updateProfile = async (req, res) => {
+//   try {
+//     const user = req.user;
+
+//     const { firstname, lastname, bio, location, username } = req.body;
+
+//     const updatedUser = await User.findOneAndUpdate(
+//       { clerkId: user.clerkId },
+//       {
+//         $set: {
+//           ...(firstname && { firstname }),
+//           ...(lastname && { lastname }),
+//           ...(bio !== undefined && { bio }),
+//           ...(location !== undefined && { location }),
+//           ...(username && { username }),
+//         },
+//       },
+//       { new: true },
+//     );
+
+//     if (!updatedUser) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+//     console.log("Profile updated successfully");
+//     res.json({ user: updatedUser, message: "Profile updated successfully" });
+//   } catch (error) {
+//     console.error("Update profile error:", error);
+//     res.status(500).json({ error: "Failed to update profile" });
+//   }
+// };
+
+// export const getCurrentUser = asyncHandler(async (req, res) => {
+//   const user = req.user;
+
+//   if (!user) return res.status(404).json({ error: "User not found" });
+//   console.log("successfully fetched current user");
+//   res.status(201).json({ user, message: "User fetched successfully" });
+// });

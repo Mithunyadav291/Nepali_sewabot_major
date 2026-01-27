@@ -98,7 +98,7 @@ const EditProfileModal = ({
         </View>
 
         <TouchableOpacity
-          // onPress={handleSave}
+          onPress={handleSave}
           disabled={isUpdating}
           className={`${isUpdating ? "opacity-50" : ""} bg-blue-600 mx-4 my-6 rounded-full py-3 items-center `}
         >

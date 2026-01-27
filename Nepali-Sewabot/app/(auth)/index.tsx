@@ -1,29 +1,5 @@
-// import { useRouter } from "expo-router";
-// import React from "react";
-// import { ImageBackground, Text, View } from "react-native";
-// import { SafeAreaView } from "react-native-safe-area-context";
-
-// const SignUpScreen = () => {
-//   const router = useRouter();
-//   return (
-//     <SafeAreaView className="flex-1 bg-slate-200">
-//       <ImageBackground
-//         source={require("../../assets/images/auth1.png")}
-//         className="flex-1 "
-//         resizeMode="cover"
-//       >
-//         <View className="flex-1 items-center justify-center ">
-//           <Text>Home screen</Text>
-//         </View>
-//       </ImageBackground>
-//     </SafeAreaView>
-//   );
-// };
-
-// export default SignUpScreen;
-
 import { useSocialAuth } from "@/hooks/useSocialAuth";
-import { Entypo, Feather, FontAwesome5 } from "@expo/vector-icons";
+import { FontAwesome5 } from "@expo/vector-icons";
 import {
   ActivityIndicator,
   Image,
@@ -42,16 +18,20 @@ export default function Index() {
       <View className="flex-1 px-8 justify-between ">
         <View className="flex-1 justify-center gap-2">
           {/* image */}
-          <View className=" items-center">
+          <View className="flex items-center ">
             <Image
-              source={require("../../assets/images/auth2.png")}
+              source={require("../../assets/images/heroImg.png")}
               resizeMode="contain"
               className="size-96"
+              //       style={{
+              //   width: 280,
+              //   height: 280,
+              // }}
             />
           </View>
 
           {/* buttons */}
-          <View className="gap-2 flex-col">
+          <View className="gap-2 flex-col -mt-10 ">
             <TouchableOpacity
               className="flex-row items-center justify-center bg-white border 
             border-gray-300 rounded-full py-3 px-6"
@@ -65,7 +45,7 @@ export default function Index() {
                 elevation: 2,
               }}
             >
-              {isLoading ? (
+              {isLoading && strategyType === "oauth_google" ? (
                 <ActivityIndicator size={30} color="#000" />
               ) : (
                 <View className="flex-row items-center justify-center">
@@ -81,7 +61,7 @@ export default function Index() {
                 </View>
               )}
             </TouchableOpacity>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               className="flex-row items-center justify-center bg-white border 
             border-gray-300 rounded-full py-3 px-6"
               onPress={() => handleSocialAuth("oauth_facebook")}
@@ -109,7 +89,7 @@ export default function Index() {
                   </Text>
                 </View>
               )}
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity
               className="flex-row items-center justify-center bg-white border 
             border-gray-300 rounded-full py-3 px-6"
@@ -123,7 +103,7 @@ export default function Index() {
                 elevation: 2,
               }}
             >
-              {isLoading ? (
+              {isLoading && strategyType === "oauth_github" ? (
                 <ActivityIndicator size={30} color="#000" />
               ) : (
                 <View className="flex-row items-center justify-center">
@@ -152,7 +132,7 @@ export default function Index() {
                 elevation: 2,
               }}
             >
-              {isLoading ? (
+              {isLoading && strategyType === "oauth_apple" ? (
                 <ActivityIndicator size={30} color="#000" />
               ) : (
                 <View className="flex-row items-center justify-center">

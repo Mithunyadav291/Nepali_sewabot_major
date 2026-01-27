@@ -12,7 +12,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as SQLite from "expo-sqlite";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useRouter } from "expo-router";
-import { useAuthStore } from "@/utils/authStore";
 
 const db = SQLite.openDatabaseSync("chat.db");
 
@@ -24,9 +23,9 @@ const formatDate = (iso) =>
   });
 
 const History = () => {
-  // const { currentUser } = useCurrentUser();
-  const { user } = useAuthStore();
-  const tableName = `messages_${user?._id}`;
+  const { currentUser } = useCurrentUser();
+
+  const tableName = `messages_${currentUser?._id}`;
 
   const [sessions, setSessions] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -50,7 +49,7 @@ const History = () => {
   const load = async () => {
     try {
       const rows = await db.getAllAsync(
-        `SELECT * FROM ${tableName} ORDER BY id ASC;`
+        `SELECT * FROM ${tableName} ORDER BY id ASC;`,
       );
       const sessionsMap = new Map();
 
@@ -112,7 +111,7 @@ const History = () => {
           },
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
@@ -128,7 +127,7 @@ const History = () => {
           onPress: () => handleDeleteSession(sessionId),
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
   return (
@@ -139,13 +138,15 @@ const History = () => {
           Chat History
         </Text>
 
-        <TouchableOpacity
-          onPress={handleDeleteAllSessions}
-          className="flex flex-row items-center gap-1"
-        >
-          <Entypo name="bucket" size={24} color="black" />
-          <Text className="text-red-600">Clear All </Text>
-        </TouchableOpacity>
+        {sessions.length > 0 && (
+          <TouchableOpacity
+            onPress={handleDeleteAllSessions}
+            className="flex flex-row items-center gap-1"
+          >
+            <Entypo name="bucket" size={24} color="black" />
+            <Text className="text-red-600">Clear All </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <FlatList

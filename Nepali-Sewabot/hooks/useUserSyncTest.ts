@@ -31,6 +31,6 @@ export const useUserSyncTest = () => {
     syncUser(payload);
 
     // Fetch latest user profile from backend
-    fetchUserProfile();
+    // fetchUserProfile();
   }, [isLoaded, clerkUser]);
 };
