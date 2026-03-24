@@ -28,7 +28,7 @@ const formatDate = (iso) =>
     year: "numeric",
   });
 
-const Sidebar = ({ visible, onClose }) => {
+const Sidebar = ({ visible, onClose, startNewChat, comesFromHistory }) => {
   const slideAnim = useRef(new Animated.Value(width)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
 
@@ -197,7 +197,6 @@ const Sidebar = ({ visible, onClose }) => {
         className="bg-indigo-950 rounded-l-3xl px-4"
       >
         {/* Header */}
-        {/* Header */}
         <View className="py-4 mb-4 border-b border-white/20 -mx-4 px-4">
           <Text className="text-white text-xl font-bold">SevaBot</Text>
           <Text className="text-indigo-200 mt-1">mithun123</Text>
@@ -206,7 +205,7 @@ const Sidebar = ({ visible, onClose }) => {
         {/* New Chat */}
         <TouchableOpacity
           onPress={() => {
-            router.replace("/(tabs)");
+            startNewChat();
             onClose();
           }}
           className="flex-row items-center bg-indigo-800/60 p-4 rounded-xl mb-3 border border-white/20"
@@ -256,11 +255,8 @@ const Sidebar = ({ visible, onClose }) => {
             renderItem={({ item, index }) => (
               <TouchableOpacity
                 onPress={() => {
-                  router.push({
-                    pathname: "/(chatVoiceScreen)/chat",
-                    params: { sessionIdFromHistory: item.sessionId },
-                  });
                   onClose();
+                  comesFromHistory(item.sessionId);
                 }}
                 onLongPress={() => confirmDelete(item.sessionId)}
                 className="mb-3"

@@ -24,50 +24,52 @@ export const useUserSync = () => {
     onSuccess: async (response: UserResponse) => {
       const { username, email } = response.data.user;
 
-      try {
-        // 🔹 Try signup first
-        const signupRes = await authAPI.signup({
-          username,
-          email,
-          password: "defaultpassword",
-        });
+    //   try {
+    //     // 🔹 Try signup first
+    //     const signupRes = await authAPI.signup({
+    //       username,
+    //       email,
+    //       password: "defaultpassword",
+    //     });
 
-        console.log("Signup success:", signupRes.data);
+    //     console.log("Signup success:", signupRes.data);
 
-        await AsyncStorage.setItem("token", signupRes.data.token);
+    //     await AsyncStorage.setItem("token", signupRes.data.token);
 
-      } catch (signupErr: any) {
-        const status = signupErr.response?.status;
+    //   } catch (signupErr: any) {
+    //     const status = signupErr.response?.status;
 
-        // 🔹 If user already exists → login instead
-        if (status === 400 || status === 409) {
-          try {
-            const loginRes = await authAPI.login({
-              username,
-              password: "defaultpassword",
-            });
+    //     // 🔹 If user already exists → login instead
+    //     if (status === 400 || status === 409) {
+    //       try {
+    //         const loginRes = await authAPI.login({
+    //           username,
+    //           password: "defaultpassword",
+    //         });
 
-            // console.log("Login success:", loginRes.data);
+    //         // console.log("Login success:", loginRes.data);
 
-            await AsyncStorage.setItem("token", loginRes.data.token);
-            // console.log("Token", loginRes.data.token);
+    //         await AsyncStorage.setItem("token", loginRes.data.token);
+    //         // console.log("Token", loginRes.data.token);
 
-          } catch (loginErr: any) {
-            console.error(
-              "Login failed:",
-              loginErr.response?.data || loginErr.message
-            );
-          }
+    //       } catch (loginErr: any) {
+    //         console.error(
+    //           "Login failed:",
+    //           loginErr.response?.data || loginErr.message
+    //         );
+    //       }
 
-          return;
-        }
+    //       return;
+    //     }
 
-        // 🔹 अन्य error
-        console.error(
-          "Signup failed:",
-          signupErr.response?.data || signupErr.message
-        );
-      }
+    //     // 🔹 अन्य error
+    //     console.error(
+    //       "Signup failed:",
+    //       signupErr.response?.data || signupErr.message
+    //     );
+    //   }
+    // },
+    console.log("success");
     },
 
     onError: (error: any) => {

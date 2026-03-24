@@ -1,333 +1,3 @@
-// import { useCurrentUser } from "@/hooks/useCurrentUser";
-// import { Ionicons } from "@expo/vector-icons";
-// import { useRouter } from "expo-router";
-// import React, { useEffect, useState } from "react";
-// import {
-//   ActivityIndicator,
-//   Image,
-//   Text,
-//   TouchableOpacity,
-//   View,
-//   TextInput,
-//   Platform,
-//   KeyboardAvoidingView,
-//   ScrollView,
-// } from "react-native";
-// import { SafeAreaView } from "react-native-safe-area-context";
-
-// const suggestions = [
-//   { label: "📄 Apply Citizenship" },
-//   { label: "🛂 Renew Passport" },
-//   { label: "💰 Social Aid Info" },
-//   { label: "🏢 Ward Office Contact" },
-// ];
-
-// // Generate a new session ID (timestamp-based)
-// const generateSessionId = () => Date.now().toString();
-
-// const HomeScreen = () => {
-//   const router = useRouter();
-
-//   const { currentUser: user, isLoading: loading } = useCurrentUser();
-
-//   const [input, setInput] = useState("");
-
-//   const handleSendOrVoice = () => {
-//     const sessionId = generateSessionId();
-//     if (input.trim()) {
-//       // Navigate to chat screen with user input
-//       router.push({
-//         pathname: "/(chatVoiceScreen)/chat",
-//         params: { firstMessage: input },
-//       });
-
-//       setInput("");
-//     } else {
-//       // Navigate to voice screen if input is empty
-//       // router.push("/screens/voiceScreen");
-//       router.push({
-//         pathname: "/(chatVoiceScreen)/voice",
-//         params: { sessionId },
-//       });
-//     }
-//   };
-
-//   if (loading) {
-//     return (
-//       <View className="flex-1 bg-white dark:bg-black items-center justify-center">
-//         <ActivityIndicator size="large" color="#1DA1F2" />
-//       </View>
-//     );
-//   }
-
-//   return (
-//     <SafeAreaView className="flex-1 bg-white dark:bg-black">
-//       {/* Header */}
-//       <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-//         <Text className="text-xl font-bold text-gray-900 dark:text-white">
-//           Nepali Sewabot
-//         </Text>
-
-//         <TouchableOpacity onPress={() => router.push("/profile")}>
-//           <Image
-//             source={{ uri: user?.profilePicture }}
-//             className="w-9 h-9 rounded-full"
-//           />
-//         </TouchableOpacity>
-//       </View>
-
-//       {/* KEYBOARD AVOIDING */}
-//       <KeyboardAvoidingView
-//         behavior={Platform.OS === "ios" ? "padding" : "padding"}
-//         style={{ flex: 1 }}
-//         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-//       >
-//         <ScrollView
-//           className="flex-1 px-4"
-//           showsVerticalScrollIndicator={false}
-//           keyboardShouldPersistTaps="handled"
-//           contentContainerStyle={{
-//             flexGrow: 1,
-//             paddingBottom: 20,
-//             justifyContent: "center",
-//             alignItems: "center",
-//           }}
-//         >
-//           {/* Title */}
-//           <Text className="text-2xl  font-semibold text-gray-900 dark:text-white mb-6 text-center">
-//             What can I help with?
-//           </Text>
-
-//           {/* Suggestion Chips */}
-//           <View className="flex-row flex-wrap justify-center gap-3 mb-10">
-//             {suggestions.map((item, index) => (
-//               <TouchableOpacity
-//                 key={index}
-//                 className="px-4 py-2 rounded-full bg-gray-600 dark:bg-gray-200"
-//                 onPress={() => setInput(item.label)}
-//               >
-//                 <Text className="dark:text-gray-900 text-white font-medium">
-//                   {item.label}
-//                 </Text>
-//               </TouchableOpacity>
-//             ))}
-//           </View>
-
-//           {/* INPUT FIELD */}
-//           <View className="w-full bg-gray-300 dark:bg-gray-800 rounded-2xl px-4 py-2 flex-row items-center">
-//             <TextInput
-//               placeholder="Ask anything..."
-//               placeholderTextColor="#A1A1AA"
-//               multiline
-//               numberOfLines={3}
-//               className="flex-1 outline-none text-gray-900 dark:text-white text-lg"
-//               value={input}
-//               onChangeText={setInput}
-//             />
-
-//             <TouchableOpacity onPress={handleSendOrVoice}>
-//               <Ionicons
-//                 name={input.trim() ? "send" : "mic"}
-//                 size={26}
-//                 color="#1DA1F2"
-//               />
-//             </TouchableOpacity>
-//           </View>
-//         </ScrollView>
-//       </KeyboardAvoidingView>
-//     </SafeAreaView>
-//   );
-// };
-
-// export default HomeScreen;
-
-// import React, { useState } from "react";
-// import {
-//   View,
-//   Text,
-//   TextInput,
-//   TouchableOpacity,
-//   FlatList,
-//   KeyboardAvoidingView,
-//   Platform,
-//   Image,
-// } from "react-native";
-// import { Ionicons } from "@expo/vector-icons";
-// import { useNavigation } from "expo-router";
-
-// export default function HomeScreen() {
-//   const navigation = useNavigation();
-
-//   const [messages, setMessages] = useState([]);
-//   const [input, setInput] = useState("");
-
-//   const sendMessage = () => {
-//     if (!input.trim()) return;
-
-//     const newMsg = {
-//       id: Date.now().toString(),
-//       text: input,
-//       role: "user",
-//     };
-
-//     setMessages((prev) => [...prev, newMsg]);
-//     setInput("");
-
-//     // simulate bot
-//     setTimeout(() => {
-//       setMessages((prev) => [
-//         ...prev,
-//         {
-//           id: Date.now().toString(),
-//           text: "यो demo उत्तर हो",
-//           role: "assistant",
-//         },
-//       ]);
-//     }, 800);
-//   };
-
-//   return (
-//     <View style={{ flex: 1, backgroundColor: "#fff" }}>
-//       {/* 🔵 HEADER */}
-//       <View
-//         style={{
-//           height: 80,
-//           backgroundColor: "#1D4ED8",
-//           flexDirection: "row",
-//           alignItems: "center",
-//           justifyContent: "space-between",
-//           paddingHorizontal: 15,
-//         }}
-//       >
-//         <TouchableOpacity onPress={() => navigation.openDrawer()}>
-//           <Ionicons name="menu" size={26} color="white" />
-//         </TouchableOpacity>
-
-//         <Text style={{ color: "white", fontSize: 20, fontWeight: "bold" }}>
-//           SevaBot
-//         </Text>
-
-//         <TouchableOpacity>
-//           <Ionicons name="settings" size={24} color="white" />
-//         </TouchableOpacity>
-//       </View>
-
-//       {/* 🟡 BODY + KEYBOARD HANDLING */}
-//       <KeyboardAvoidingView
-//         style={{ flex: 1 }}
-//         behavior={Platform.OS === "ios" ? "padding" : "height"}
-//         keyboardVerticalOffset={80}
-//       >
-//         {messages.length === 0 ? (
-//           // 🟢 INTRO SCREEN (LIKE IMAGE)
-//           <View
-//             style={{
-//               flex: 1,
-//               justifyContent: "center",
-//               alignItems: "center",
-//               padding: 20,
-//             }}
-//           >
-//             <Image
-//               source={require("../../assets/images/heroImg.png")} // use your logo
-//               style={{ width: 120, height: 120, marginBottom: 20 }}
-//               resizeMode="contain"
-//             />
-
-//             <Text
-//               style={{ fontSize: 22, fontWeight: "bold", color: "#1D4ED8" }}
-//             >
-//               नमस्कार! म SevaBot हुँ
-//             </Text>
-
-//             <Text style={{ marginTop: 10, color: "gray" }}>
-//               डिजिटल नागरिक बडापत्र
-//             </Text>
-
-//             {/* INFO BOX */}
-//             <View
-//               style={{
-//                 marginTop: 30,
-//                 padding: 20,
-//                 borderRadius: 15,
-//                 backgroundColor: "#F1F5F9",
-//                 width: "100%",
-//               }}
-//             >
-//               <Text style={{ fontWeight: "bold", marginBottom: 10 }}>
-//                 कसरी प्रयोग गर्ने:
-//               </Text>
-
-//               <Text>१. कुराकानी सुरु गर्नुहोस्</Text>
-//               <Text>२. नेपालीमा प्रश्न सोध्नुहोस्</Text>
-//               <Text>३. उत्तर प्राप्त गर्नुहोस्</Text>
-//             </View>
-//           </View>
-//         ) : (
-//           // 🔵 CHAT UI
-//           <FlatList
-//             data={messages}
-//             keyExtractor={(item) => item.id}
-//             contentContainerStyle={{ padding: 10 }}
-//             renderItem={({ item }) => (
-//               <View
-//                 style={{
-//                   alignSelf: item.role === "user" ? "flex-end" : "flex-start",
-//                   backgroundColor: item.role === "user" ? "#2563EB" : "#E5E7EB",
-//                   padding: 10,
-//                   borderRadius: 10,
-//                   marginVertical: 5,
-//                   maxWidth: "80%",
-//                 }}
-//               >
-//                 <Text
-//                   style={{
-//                     color: item.role === "user" ? "white" : "black",
-//                   }}
-//                 >
-//                   {item.text}
-//                 </Text>
-//               </View>
-//             )}
-//           />
-//         )}
-
-//         {/* 🟢 INPUT BOX */}
-//         <View
-//           style={{
-//             flexDirection: "row",
-//             padding: 10,
-//             borderTopWidth: 1,
-//             borderColor: "#ddd",
-//           }}
-//         >
-//           <TextInput
-//             value={input}
-//             onChangeText={setInput}
-//             placeholder="आफ्नो प्रश्न लेख्नुहोस्..."
-//             style={{
-//               flex: 1,
-//               borderWidth: 1,
-//               borderColor: "#ccc",
-//               borderRadius: 25,
-//               paddingHorizontal: 15,
-//             }}
-//           />
-
-//           <TouchableOpacity onPress={sendMessage}>
-//             <Ionicons
-//               name="send"
-//               size={24}
-//               color="#2563EB"
-//               style={{ marginLeft: 10 }}
-//             />
-//           </TouchableOpacity>
-//         </View>
-//       </KeyboardAvoidingView>
-//     </View>
-//   );
-// }
-
 import {
   View,
   Text,
@@ -361,8 +31,6 @@ const ChatScreen = () => {
 
   const [sidebarVisible, setSidebarVisible] = useState(false);
 
-  const { firstMessage, sessionIdFromHistory } = useLocalSearchParams();
-
   const [messages, setMessages] = useState([]);
   const [history, setHistory] = useState([]);
   const [activeConversationId, setActiveConversationId] = useState<
@@ -372,17 +40,11 @@ const ChatScreen = () => {
   const [userMessage, setUserMessage] = useState("");
   const [aiTyping, setAiTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const [hasUsedFirstMessage, setHasUsedFirstMessage] = useState(false);
   const [loadedFromHistory, setLoadedFromHistory] = useState(false);
 
   const { currentUser } = useCurrentUser();
   const tableName = `messages_${currentUser?._id}`;
 
-  // const { sendMessage, loading } = useSendMessage();
-
-  //scroll to bottom when new message arrives
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (flatListRef.current) {
@@ -392,27 +54,9 @@ const ChatScreen = () => {
     return () => clearTimeout(timeout);
   }, [messages]);
 
-  // load messages from the history component which matches sessionId
-  useEffect(() => {
-    const loadMessages = async () => {
-      if (!sessionIdFromHistory) return;
-      const rows = await db.getAllAsync(
-        `SELECT * FROM ${tableName} WHERE session_id = ? ORDER BY id ASC`,
-        [sessionIdFromHistory],
-      );
-      setMessages(rows);
-      setHistory(rows);
-      setLoadedFromHistory(true); // ✅ Prevent saving for these
-      setActiveConversationId(sessionIdFromHistory);
-    };
-
-    loadMessages();
-  }, [sessionIdFromHistory]);
-
   // save chat messages to asyncStorage for offline use
   useEffect(() => {
     if (!messages.length) return;
-
     if (loadedFromHistory) {
       setLoadedFromHistory(false); // 👈 skip saving first load only
       return;
@@ -429,99 +73,43 @@ const ChatScreen = () => {
           latestMessage.sender,
           latestMessage.content,
           timestamp,
-          activeConversationId || sessionIdFromHistory,
+          activeConversationId,
         ],
       );
 
-      // console.log("💾 Message inserted after timeout:", latestMessage.content);
+      console.log("💾 Message inserted after timeout:", latestMessage.content);
     }, 600); // 2 seconds delay
 
     return () => clearTimeout(timeout); // cleanup on re-render
   }, [messages]);
 
-  useEffect(() => {
-    fetchFirstMessages();
-  }, [firstMessage]);
-
-  const fetchFirstMessages = async () => {
-    if (!firstMessage || hasUsedFirstMessage) return;
-
-    const firstMsg = {
-      sender: "user",
-      content: firstMessage,
-    };
-
-    const updatedHistory = [...history, firstMsg];
-
-    setMessages((prev) => [...prev, firstMsg]);
-    setHistory(updatedHistory);
-
+  const startNewChat = async () => {
     try {
-      setIsLoading(true);
-      setAiTyping(true);
-
       const response = await conversationAPI.create({ title: "नयाँ कुराकानी" });
+      // setConversations([response.data, ...conversations]);
       setActiveConversationId(response.data.id);
-      const res = await conversationAPI.addMessage(
-        // sessionId || sessionIdFromHistory || 1,
-        activeConversationId || sessionIdFromHistory,
-        userMessage.trim(),
-        true,
-      );
-
-      const aiText = res?.data.assistant_message.content || "No response";
-
-      const aiMsg = {
-        sender: "assistant",
-        content: aiText,
-      };
-
-      setMessages((prev) => [...prev, aiMsg]);
-      setHistory((prev) => [...prev, aiMsg]);
+      setMessages([]);
+      setHistory([]);
+      setSidebarVisible(false); // Close sidebar on mobile
     } catch (error) {
-      console.error("RAG first message error:", error);
-    } finally {
-      setIsLoading(false);
-      setAiTyping(false);
-      setHasUsedFirstMessage(true);
+      console.error("Failed to create conversation:", error);
     }
   };
 
-  // const fetchFirstMessages = async () => {
-  //   if (!firstMessage || hasUsedFirstMessage) return;
-
-  //   const firstMsg = {
-  //     sender: "user",
-  //     content: firstMessage,
-  //   };
-
-  //   const updatedHistory = [...history, firstMsg];
-
-  //   // Add user message to UI and state ...
-  //   setMessages((prev) => [...prev, firstMsg]);
-  //   setHistory(updatedHistory);
-
-  //   try {
-  //     setIsLoading(true);
-  //     setAiTyping(true);
-
-  //     const aiResponse = await sendToGpt(updatedHistory);
-
-  //     const aiMsg = {
-  //       sender: "assistant",
-  //       content: aiResponse,
-  //     };
-
-  //     setMessages((prev) => [...prev, aiMsg]);
-  //     setHistory((prev) => [...prev, aiMsg]);
-  //   } catch (error) {
-  //     console.error("Error on firstMessage GPT:", error);
-  //   } finally {
-  //     setIsLoading(false);
-  //     setAiTyping(false);
-  //     setHasUsedFirstMessage(true);
-  //   }
-  // };
+  const comesFromHistory = async (conversationId) => {
+    try {
+      const rows = await db.getAllAsync(
+        `SELECT * FROM ${tableName} WHERE session_id = ? ORDER BY id ASC`,
+        [conversationId],
+      );
+      setMessages(rows);
+      setHistory(rows);
+      setActiveConversationId(conversationId);
+      setLoadedFromHistory(true);
+    } catch (error) {
+      console.error("Failed to load conversation:", error);
+    }
+  };
 
   const handleSend = async () => {
     if (!userMessage.trim()) {
@@ -529,6 +117,16 @@ const ChatScreen = () => {
       return;
     }
 
+    if (!activeConversationId) {
+      await startNewChat();
+      setTimeout(() => sendMessageToConversation(userMessage), 100);
+      return;
+    }
+
+    await sendMessageToConversation(userMessage);
+  };
+
+  const sendMessageToConversation = async (userMessage) => {
     const userMsg = {
       sender: "user",
       content: userMessage.trim(),
@@ -544,15 +142,8 @@ const ChatScreen = () => {
       setIsLoading(true);
       setAiTyping(true);
 
-      // ✅ CALL YOUR RAG BACKEND
-      // const res = await sendMessage(
-      //   sessionId || sessionIdFromHistory || 1, // conversation id
-      //   userMessage.trim(),
-      //   true, // use RAG
-      // );
       const res = await conversationAPI.addMessage(
-        // sessionId || sessionIdFromHistory || 1,
-        activeConversationId || sessionIdFromHistory,
+        activeConversationId,
         userMessage.trim(),
         true,
       );
@@ -569,97 +160,13 @@ const ChatScreen = () => {
       setHistory((prev) => [...prev, aiMsg]);
     } catch (error) {
       console.error("RAG API Error:", error);
-      alert("Something went wrong while contacting AI.");
+      alert("प्रश्न पठाउन असफल भयो। पुन: प्रयास गर्नुहोस्।");
     } finally {
       setIsLoading(false);
       setAiTyping(false);
     }
   };
 
-  // const handleSend = async () => {
-  //   if (!userMessage.trim()) {
-  //     alert("Please write a message.");
-  //     return;
-  //   }
-
-  //   const userMsg = {
-  //     sender: "user",
-  //     content: userMessage.trim(),
-  //   };
-
-  //   const updatedHistory = [...history, userMsg];
-
-  //   // Add user message to UI and state
-  //   setMessages((prev) => [...prev, userMsg]);
-  //   setHistory(updatedHistory);
-  //   // console.log("Messages:", messages);
-  //   // console.log("History:", history);
-  //   setUserMessage(""); // Clear input
-
-  //   try {
-  //     setIsLoading(true);
-  //     setAiTyping(true);
-
-  //     const aiResponse = await sendToGpt(updatedHistory);
-
-  //     const aiMsg = {
-  //       sender: "assistant",
-  //       content: aiResponse,
-  //     };
-
-  //     setMessages((prev) => [...prev, aiMsg]);
-  //     setHistory((prev) => [...prev, aiMsg]);
-  //   } catch (error: any) {
-  //     console.error("GPT API Error:", error);
-  //     alert("Something went wrong while contacting AI.");
-  //   } finally {
-  //     setIsLoading(false);
-  //     setAiTyping(false);
-  //   }
-  // };
-
-  const sendToGpt = async (updatedHistory) => {
-    const formattedMessages = updatedHistory.map((msg) => ({
-      role: msg.sender === "user" ? "user" : "assistant",
-      content: msg.content,
-    }));
-
-    const APIKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
-    // console.log(APIKey);
-
-    if (!APIKey) {
-      alert("Error: No API key found");
-      return;
-    }
-
-    try {
-      const response = await axios.post(
-        "https://api.openai.com/v1/responses",
-        {
-          model: "gpt-4o-mini",
-          input: [
-            {
-              role: "system",
-              content:
-                "You are AI Assistant, a helpful and friendly assistant. If the question is in Nepali, answer in both Nepali and English (Nepali first). If it's in English, reply only in English.",
-            },
-            ...formattedMessages,
-          ],
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${APIKey}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      return response.data.output[0].content[0].text;
-    } catch (err) {
-      console.log("GPT API Error:", err.response?.data || err);
-      throw err;
-    }
-  };
   const handleVoiceScreen = () => {
     if (activeConversationId) {
       router.push({
@@ -669,45 +176,10 @@ const ChatScreen = () => {
     } else {
       router.push({
         pathname: "/(chatVoiceScreen)/voice",
-        params: { sessionIdFromHistory },
+        params: { activeConversationId },
       });
     }
   };
-
-  // const renderItem = ({ item }) => {
-  //   const isUser = item.sender === "user";
-
-  //   return (
-  //     <View
-  //       className={`w-full mb-3 flex ${isUser ? "items-end" : "items-start"}`}
-  //     >
-  //       <View
-  //         className={`px-3 py-2 rounded-2xl max-w-[85%] ${
-  //           isUser ? "bg-blue-500" : "bg-gray-200"
-  //         }`}
-  //       >
-  //         {/* Sender Label */}
-  //         <Text
-  //           className={`text-xs ${isUser ? "text-white" : "text-gray-600"}`}
-  //         >
-  //           {item.sender.toUpperCase()}
-  //         </Text>
-
-  //         {/* Markdown Renderer */}
-
-  //         <Markdown
-  //           style={isUser ? markdownStylesUser : markdownStylesBot}
-  //           onLinkPress={(url) => {
-  //             Linking.openURL(url);
-  //             return false;
-  //           }}
-  //         >
-  //           {item.content}
-  //         </Markdown>
-  //       </View>
-  //     </View>
-  //   );
-  // };
   const renderItem = ({ item }) => {
     const isUser = item.sender === "user";
 
@@ -1005,6 +477,8 @@ const ChatScreen = () => {
       <Sidebar
         visible={sidebarVisible}
         onClose={() => setSidebarVisible(false)}
+        startNewChat={startNewChat}
+        comesFromHistory={comesFromHistory}
       />
     </>
   );

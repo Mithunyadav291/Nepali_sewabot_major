@@ -129,7 +129,7 @@ const ChatScreen = () => {
       setActiveConversationId(response.data.id);
       const res = await conversationAPI.addMessage(
         // sessionId || sessionIdFromHistory || 1,
-        activeConversationId || sessionIdFromHistory,
+        activeConversationId,
         userMessage.trim(),
         true,
       );
@@ -217,7 +217,7 @@ const ChatScreen = () => {
       // );
       const res = await conversationAPI.addMessage(
         // sessionId || sessionIdFromHistory || 1,
-        activeConversationId || sessionIdFromHistory,
+        activeConversationId,
         userMessage.trim(),
         true,
       );
@@ -334,7 +334,7 @@ const ChatScreen = () => {
     } else {
       router.push({
         pathname: "/(chatVoiceScreen)/voice",
-        params: { sessionIdFromHistory },
+        params: { activeConversationId },
       });
     }
   };
