@@ -11,7 +11,7 @@ export const syncUser = asyncHandler(async (req, res) => {
   const exitingUser = await User.findOne({ clerkId: userId });
   if (exitingUser) {
     return res
-      .status(200)
+      .status(409)
       .json({ user: exitingUser, message: "User already exists" });
   }
 

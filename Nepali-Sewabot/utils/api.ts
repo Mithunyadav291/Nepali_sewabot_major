@@ -2,8 +2,8 @@ import { useAuth } from "@clerk/clerk-expo";
 import axios, {AxiosInstance} from "axios"
 import { getBaseUrl } from "./apiBaseUrl";
 
-// const API_BASE_URL="https://nepali-sewabot-api.onrender.com/api"
-const API_BASE_URL=getBaseUrl()
+const API_BASE_URL="https://nepali-sewabot-api.onrender.com/api"
+// const API_BASE_URL=getBaseUrl()
 console.log(API_BASE_URL)
 
 

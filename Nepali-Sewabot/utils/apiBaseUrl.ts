@@ -20,7 +20,8 @@ export const getBaseUrl=()=>{
 
     if (debuggerHost) {
     // console.log(`Using host IP from Expo debugger: ${debuggerHost}`);
-    return `http://${debuggerHost}:3001/api`;
+    return `http://${debuggerHost}:8000/api`;
+    // return `http://${debuggerHost}:3001/api`;
   }
   // console.warn("No debuggerHost found. Falling back to localhost.");
   return 'http://localhost:3001/api';

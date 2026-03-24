@@ -18,17 +18,21 @@ import { scale } from "react-native-size-matters";
 import axios from "axios";
 import * as SQLite from "expo-sqlite";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+// import { useSendMessage } from "@/hooks/useSendMessage";
+import { conversationAPI } from "@/utils/api_rag";
 
 const db = SQLite.openDatabaseSync("chat.db");
 
 const ChatScreen = () => {
   const router = useRouter();
   const flatListRef = useRef(null);
-  const { firstMessage, sessionId, sessionIdFromHistory } =
-    useLocalSearchParams();
+  const { firstMessage, sessionIdFromHistory } = useLocalSearchParams();
 
   const [messages, setMessages] = useState([]);
   const [history, setHistory] = useState([]);
+  const [activeConversationId, setActiveConversationId] = useState<
+    number | null
+  >(null);
 
   const [userMessage, setUserMessage] = useState("");
   const [aiTyping, setAiTyping] = useState(false);
@@ -40,6 +44,8 @@ const ChatScreen = () => {
 
   const { currentUser } = useCurrentUser();
   const tableName = `messages_${currentUser?._id}`;
+
+  // const { sendMessage, loading } = useSendMessage();
 
   //scroll to bottom when new message arrives
   useEffect(() => {
@@ -62,6 +68,7 @@ const ChatScreen = () => {
       setMessages(rows);
       setHistory(rows);
       setLoadedFromHistory(true); // ✅ Prevent saving for these
+      setActiveConversationId(sessionIdFromHistory);
     };
 
     loadMessages();
@@ -87,7 +94,7 @@ const ChatScreen = () => {
           latestMessage.sender,
           latestMessage.content,
           timestamp,
-          sessionId || sessionIdFromHistory,
+          activeConversationId || sessionIdFromHistory,
         ],
       );
 
@@ -111,7 +118,6 @@ const ChatScreen = () => {
 
     const updatedHistory = [...history, firstMsg];
 
-    // Add user message to UI and state ...
     setMessages((prev) => [...prev, firstMsg]);
     setHistory(updatedHistory);
 
@@ -119,23 +125,68 @@ const ChatScreen = () => {
       setIsLoading(true);
       setAiTyping(true);
 
-      const aiResponse = await sendToGpt(updatedHistory);
+      const response = await conversationAPI.create({ title: "नयाँ कुराकानी" });
+      setActiveConversationId(response.data.id);
+      const res = await conversationAPI.addMessage(
+        // sessionId || sessionIdFromHistory || 1,
+        activeConversationId || sessionIdFromHistory,
+        userMessage.trim(),
+        true,
+      );
+
+      const aiText = res?.data.assistant_message.content || "No response";
 
       const aiMsg = {
         sender: "assistant",
-        content: aiResponse,
+        content: aiText,
       };
 
       setMessages((prev) => [...prev, aiMsg]);
       setHistory((prev) => [...prev, aiMsg]);
     } catch (error) {
-      console.error("Error on firstMessage GPT:", error);
+      console.error("RAG first message error:", error);
     } finally {
       setIsLoading(false);
       setAiTyping(false);
       setHasUsedFirstMessage(true);
     }
   };
+
+  // const fetchFirstMessages = async () => {
+  //   if (!firstMessage || hasUsedFirstMessage) return;
+
+  //   const firstMsg = {
+  //     sender: "user",
+  //     content: firstMessage,
+  //   };
+
+  //   const updatedHistory = [...history, firstMsg];
+
+  //   // Add user message to UI and state ...
+  //   setMessages((prev) => [...prev, firstMsg]);
+  //   setHistory(updatedHistory);
+
+  //   try {
+  //     setIsLoading(true);
+  //     setAiTyping(true);
+
+  //     const aiResponse = await sendToGpt(updatedHistory);
+
+  //     const aiMsg = {
+  //       sender: "assistant",
+  //       content: aiResponse,
+  //     };
+
+  //     setMessages((prev) => [...prev, aiMsg]);
+  //     setHistory((prev) => [...prev, aiMsg]);
+  //   } catch (error) {
+  //     console.error("Error on firstMessage GPT:", error);
+  //   } finally {
+  //     setIsLoading(false);
+  //     setAiTyping(false);
+  //     setHasUsedFirstMessage(true);
+  //   }
+  // };
 
   const handleSend = async () => {
     if (!userMessage.trim()) {
@@ -150,34 +201,87 @@ const ChatScreen = () => {
 
     const updatedHistory = [...history, userMsg];
 
-    // Add user message to UI and state
     setMessages((prev) => [...prev, userMsg]);
     setHistory(updatedHistory);
-    // console.log("Messages:", messages);
-    // console.log("History:", history);
-    setUserMessage(""); // Clear input
+    setUserMessage("");
 
     try {
       setIsLoading(true);
       setAiTyping(true);
 
-      const aiResponse = await sendToGpt(updatedHistory);
+      // ✅ CALL YOUR RAG BACKEND
+      // const res = await sendMessage(
+      //   sessionId || sessionIdFromHistory || 1, // conversation id
+      //   userMessage.trim(),
+      //   true, // use RAG
+      // );
+      const res = await conversationAPI.addMessage(
+        // sessionId || sessionIdFromHistory || 1,
+        activeConversationId || sessionIdFromHistory,
+        userMessage.trim(),
+        true,
+      );
+      console.log("RAG response:", res.data);
+      // ⚠️ Adjust based on your backend response structure
+      const aiText = res?.data.assistant_message.content || "No response";
 
       const aiMsg = {
         sender: "assistant",
-        content: aiResponse,
+        content: aiText,
       };
 
       setMessages((prev) => [...prev, aiMsg]);
       setHistory((prev) => [...prev, aiMsg]);
-    } catch (error: any) {
-      console.error("GPT API Error:", error);
+    } catch (error) {
+      console.error("RAG API Error:", error);
       alert("Something went wrong while contacting AI.");
     } finally {
       setIsLoading(false);
       setAiTyping(false);
     }
   };
+
+  // const handleSend = async () => {
+  //   if (!userMessage.trim()) {
+  //     alert("Please write a message.");
+  //     return;
+  //   }
+
+  //   const userMsg = {
+  //     sender: "user",
+  //     content: userMessage.trim(),
+  //   };
+
+  //   const updatedHistory = [...history, userMsg];
+
+  //   // Add user message to UI and state
+  //   setMessages((prev) => [...prev, userMsg]);
+  //   setHistory(updatedHistory);
+  //   // console.log("Messages:", messages);
+  //   // console.log("History:", history);
+  //   setUserMessage(""); // Clear input
+
+  //   try {
+  //     setIsLoading(true);
+  //     setAiTyping(true);
+
+  //     const aiResponse = await sendToGpt(updatedHistory);
+
+  //     const aiMsg = {
+  //       sender: "assistant",
+  //       content: aiResponse,
+  //     };
+
+  //     setMessages((prev) => [...prev, aiMsg]);
+  //     setHistory((prev) => [...prev, aiMsg]);
+  //   } catch (error: any) {
+  //     console.error("GPT API Error:", error);
+  //     alert("Something went wrong while contacting AI.");
+  //   } finally {
+  //     setIsLoading(false);
+  //     setAiTyping(false);
+  //   }
+  // };
 
   const sendToGpt = async (updatedHistory) => {
     const formattedMessages = updatedHistory.map((msg) => ({
@@ -222,10 +326,10 @@ const ChatScreen = () => {
     }
   };
   const handleVoiceScreen = () => {
-    if (sessionId) {
+    if (activeConversationId) {
       router.push({
         pathname: "/(chatVoiceScreen)/voice",
-        params: { sessionId },
+        params: { activeConversationId },
       });
     } else {
       router.push({
@@ -308,7 +412,7 @@ const ChatScreen = () => {
         {aiTyping && (
           <View className=" flex-row mx-4  ">
             <View className="bg-gray-200 p-2 rounded-full">
-              <Text>AI is thinking...</Text>
+              <Text>assistant is thinking...</Text>
             </View>
           </View>
         )}
