@@ -7,15 +7,22 @@ export const useSignOut=()=>{
 
     const handleSignOut=()=>{
         
-        Alert.alert("Logout","Are you sure you want to logout?",[
-            {
-                text:"Cancel",style:"cancel"
-            },{
-                text:"Logout",
-                style:"destructive",
-                onPress:()=>signOut()
-            }
-        ])
+       Alert.alert(
+    "खाता बन्द गर्नुहोस्", 
+    "के तपाईं आफ्नो खाताबाट बाहिरिन चाहनुहुन्छ?", 
+    [
+        {
+            text: "रद्द गर्नुहोस्", 
+            style: "cancel"
+        },
+        {
+            text: "बाहिरिनुहोस्",
+            style: "destructive",
+            onPress: () => signOut()
+        }
+    ]
+);
+
     }
 
     return {handleSignOut};

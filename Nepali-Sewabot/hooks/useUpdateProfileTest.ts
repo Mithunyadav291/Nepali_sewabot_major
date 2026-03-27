@@ -35,9 +35,9 @@ export const useProfile = () => {
     try {
       await updateProfile(formData);
       setIsEditModalVisible(false);
-      Alert.alert("Success", "Profile updated successfully!");
+      Alert.alert("सफलता", "प्रोफाइल सफलतापूर्वक अपडेट गरियो!");
     } catch {
-      Alert.alert("Error", "Failed to update profile");
+      Alert.alert("त्रुटि", "प्रोफाइल अपडेट गर्न असफल भयो");
     }
   };
 

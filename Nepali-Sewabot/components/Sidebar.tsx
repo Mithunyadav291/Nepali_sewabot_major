@@ -8,6 +8,7 @@ import {
   Alert,
   FlatList,
   RefreshControl,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -17,18 +18,35 @@ import {
 } from "react-native-safe-area-context";
 import * as SQLite from "expo-sqlite";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useSignOut } from "@/hooks/useSignOut";
+import { SignedOut } from "@clerk/clerk-expo";
 
 const { width } = Dimensions.get("window");
 const db = SQLite.openDatabaseSync("chat.db");
 
-const formatDate = (iso) =>
-  new Date(iso).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+type sidebarProps = {
+  visible: boolean;
+  onClose: () => void;
+  startNewChat: () => void;
+  comesFromHistory: (conversationId: number) => void;
+  conversations: any[];
+  activeConvesation: any;
+  onDeleteConversation: (conversationId: number) => void;
+  onSelectConversation: (conversationId: number) => void;
+  loadConversations: () => void;
+};
 
-const Sidebar = ({ visible, onClose, startNewChat, comesFromHistory }) => {
+const Sidebar = ({
+  visible,
+  onClose,
+  startNewChat,
+  // comesFromHistory,
+  conversations,
+  activeConversation,
+  onDeleteConversation,
+  onSelectConversation,
+  loadConversations,
+}: sidebarProps) => {
   const slideAnim = useRef(new Animated.Value(width)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
 
@@ -40,6 +58,8 @@ const Sidebar = ({ visible, onClose, startNewChat, comesFromHistory }) => {
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  const { handleSignOut } = useSignOut();
 
   useEffect(() => {
     if (visible) {
@@ -71,48 +91,48 @@ const Sidebar = ({ visible, onClose, startNewChat, comesFromHistory }) => {
     }
   }, [visible]);
 
-  useEffect(() => {
-    load();
-  }, []);
+  // useEffect(() => {
+  //   load();
+  // }, []);
 
-  const load = async () => {
-    try {
-      const rows = await db.getAllAsync(
-        `SELECT * FROM ${tableName} ORDER BY id ASC;`,
-      );
-      const sessionsMap = new Map();
+  // const load = async () => {
+  //   try {
+  //     const rows = await db.getAllAsync(
+  //       `SELECT * FROM ${tableName} ORDER BY id ASC;`,
+  //     );
+  //     const sessionsMap = new Map();
 
-      rows.forEach((msg) => {
-        if (!sessionsMap.has(msg.session_id)) {
-          sessionsMap.set(msg.session_id, []);
-        }
-        sessionsMap.get(msg.session_id).push(msg);
-      });
+  //     rows.forEach((msg) => {
+  //       if (!sessionsMap.has(msg.session_id)) {
+  //         sessionsMap.set(msg.session_id, []);
+  //       }
+  //       sessionsMap.get(msg.session_id).push(msg);
+  //     });
 
-      const sessionPreviews = Array.from(sessionsMap.entries())
-        .map(([sessionId, msgs]) => {
-          const firstUserMsg = msgs.find((m) => m.sender === "user") || msgs[0];
-          return {
-            sessionId,
-            id: firstUserMsg.id,
-            preview: firstUserMsg.content,
-            date: firstUserMsg.timestamp,
-            messages: msgs,
-          };
-        })
-        .sort((a, b) => new Date(b.date) - new Date(a.date));
+  //     const sessionPreviews = Array.from(sessionsMap.entries())
+  //       .map(([sessionId, msgs]) => {
+  //         const firstUserMsg = msgs.find((m) => m.sender === "user") || msgs[0];
+  //         return {
+  //           sessionId,
+  //           id: firstUserMsg.id,
+  //           preview: firstUserMsg.content,
+  //           date: firstUserMsg.timestamp,
+  //           messages: msgs,
+  //         };
+  //       })
+  //       .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-      setSessions(sessionPreviews);
-      // console.log({ sessionPreviews });
-    } catch (error) {
-      console.error("❌ Failed to load sessions by session_id", error);
-    }
-  };
+  //     setSessions(sessionPreviews);
+  //     // console.log({ sessionPreviews });
+  //   } catch (error) {
+  //     console.error("❌ Failed to load sessions by session_id", error);
+  //   }
+  // };
 
   const onRefresh = async () => {
     try {
       setRefreshing(true);
-      await load(); // re-fetch user
+      await loadConversations(); // re-fetch user
     } catch (error) {
       console.log("Refresh failed:", error);
     } finally {
@@ -120,56 +140,56 @@ const Sidebar = ({ visible, onClose, startNewChat, comesFromHistory }) => {
     }
   };
 
-  const handleDeleteSession = async (sessionId) => {
-    try {
-      await db.runAsync(`DELETE FROM ${tableName} WHERE session_id = ?;`, [
-        sessionId,
-      ]);
-      // console.log(`✅ Deleted session ${sessionId}`);
-      load(); // Refresh list
-    } catch (error) {
-      console.error("❌ Failed to delete session", error);
-    }
-  };
+  // const handleDeleteSession = async (sessionId) => {
+  //   try {
+  //     await db.runAsync(`DELETE FROM ${tableName} WHERE session_id = ?;`, [
+  //       sessionId,
+  //     ]);
+  //     // console.log(`✅ Deleted session ${sessionId}`);
+  //     load(); // Refresh list
+  //   } catch (error) {
+  //     console.error("❌ Failed to delete session", error);
+  //   }
+  // };
 
-  const handleDeleteAllSessions = () => {
-    Alert.alert(
-      "Delete All History",
-      "Are you sure you want to delete all chat sessions?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete All",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await db.runAsync(`DELETE FROM ${tableName};`);
-              load(); // Refresh UI
-            } catch (error) {
-              console.error("❌ Failed to delete all sessions", error);
-            }
-          },
-        },
-      ],
-      { cancelable: true },
-    );
-  };
+  // const handleDeleteAllSessions = () => {
+  //   Alert.alert(
+  //     "Delete All History",
+  //     "Are you sure you want to delete all chat sessions?",
+  //     [
+  //       { text: "Cancel", style: "cancel" },
+  //       {
+  //         text: "Delete All",
+  //         style: "destructive",
+  //         onPress: async () => {
+  //           try {
+  //             await db.runAsync(`DELETE FROM ${tableName};`);
+  //             load(); // Refresh UI
+  //           } catch (error) {
+  //             console.error("❌ Failed to delete all sessions", error);
+  //           }
+  //         },
+  //       },
+  //     ],
+  //     { cancelable: true },
+  //   );
+  // };
 
-  const confirmDelete = (sessionId) => {
-    Alert.alert(
-      "Delete Chat",
-      "Are you sure you want to delete this chat session?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => handleDeleteSession(sessionId),
-        },
-      ],
-      { cancelable: true },
-    );
-  };
+  // const confirmDelete = (sessionId) => {
+  //   Alert.alert(
+  //     "Delete Chat",
+  //     "Are you sure you want to delete this chat session?",
+  //     [
+  //       { text: "Cancel", style: "cancel" },
+  //       {
+  //         text: "Delete",
+  //         style: "destructive",
+  //         onPress: () => handleDeleteSession(sessionId),
+  //       },
+  //     ],
+  //     { cancelable: true },
+  //   );
+  // };
 
   if (!visible) return null;
 
@@ -194,12 +214,22 @@ const Sidebar = ({ visible, onClose, startNewChat, comesFromHistory }) => {
           width: width * 0.75,
           padding: 20,
         }}
-        className="bg-indigo-950 rounded-l-3xl px-4"
+        className="bg-slate-900 rounded-l-3xl px-4"
       >
         {/* Header */}
-        <View className="py-4 mb-4 border-b border-white/20 -mx-4 px-4">
-          <Text className="text-white text-xl font-bold">SevaBot</Text>
-          <Text className="text-indigo-200 mt-1">mithun123</Text>
+        <View className=" flex flex-row items-center gap-4  py-4 mb-4 border-b border-white/20 -mx-4 px-4">
+          <Image
+            source={{
+              uri: currentUser?.profilePicture,
+            }}
+            className="w-12 h-12 rounded-full"
+          />
+          <View>
+            <Text className="text-white text-xl font-bold">SevaBot</Text>
+            <Text className="text-indigo-200 mt-1">
+              {currentUser?.username || "User"}
+            </Text>
+          </View>
         </View>
 
         {/* New Chat */}
@@ -208,7 +238,7 @@ const Sidebar = ({ visible, onClose, startNewChat, comesFromHistory }) => {
             startNewChat();
             onClose();
           }}
-          className="flex-row items-center bg-indigo-800/60 p-4 rounded-xl mb-3 border border-white/20"
+          className="flex-row items-center bg-slate-800/60 p-4 rounded-xl mb-3 border border-white/20"
         >
           <Ionicons name="add-circle-outline" size={20} color="#c7d2fe" />
           <Text className="text-indigo-100 ml-3 font-medium">
@@ -219,10 +249,10 @@ const Sidebar = ({ visible, onClose, startNewChat, comesFromHistory }) => {
         {/* Settings */}
         <TouchableOpacity
           onPress={() => {
-            router.push("/(tabs)/profile");
-            onClose();
+            // router.push("/(onboarding)");
+            // onClose();
           }}
-          className="flex-row items-center bg-indigo-800/40 p-4 rounded-xl border border-white/20"
+          className="flex-row items-center bg-slate-800/40 p-4 rounded-xl border border-white/20"
         >
           <Ionicons name="settings-outline" size={20} color="#c7d2fe" />
           <Text className="text-indigo-100 ml-3 font-medium">सेटिङ</Text>
@@ -230,17 +260,17 @@ const Sidebar = ({ visible, onClose, startNewChat, comesFromHistory }) => {
 
         {/* Empty State */}
         <View className="mt-6 ">
-          <Text className="text-indigo-300 text-md mb-4"> कुराकानी:</Text>
+          <Text className="text-indigo-300 text-md mb-4"> कुराकानीहरु :</Text>
           <FlatList
-            data={sessions}
+            data={conversations}
             keyExtractor={(item, index) => index.toString()}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{
               paddingBottom: 80,
-              ...(sessions.length === 0 && {
-                flex: 1,
-                justifyContent: "center",
-              }),
+              // ...(conversations.length === 0 && {
+              flex: 1,
+              justifyContent: "center",
+              // }),
             }}
             refreshControl={
               // <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -256,24 +286,42 @@ const Sidebar = ({ visible, onClose, startNewChat, comesFromHistory }) => {
               <TouchableOpacity
                 onPress={() => {
                   onClose();
-                  comesFromHistory(item.sessionId);
+                  // comesFromHistory(item.sessionId);
+                  onSelectConversation(item.id);
                 }}
-                onLongPress={() => confirmDelete(item.sessionId)}
+                // onLongPress={() =>
+                //   //  confirmDelete(item.sessionId)
+                //   onDeleteConversation(item.id)
+                // }
                 className="mb-3"
               >
-                <View className="bg-indigo-900/50 p-3 rounded-xl border border-white/10">
+                <View className="bg-slate-800/50 p-3 rounded-xl border border-white/10">
                   <View className="flex-row justify-between mb-1">
                     <Text className="text-indigo-300 text-xs">
-                      Chat #{sessions.length - index}
+                      #{conversations?.length - index} {item?.title}
                     </Text>
                     <Text className="text-indigo-400 text-[10px]">
-                      {new Date(item.date).toLocaleDateString()}
+                      {new Date(item.updated_at).toLocaleDateString("ne-NP")}
                     </Text>
                   </View>
 
-                  <Text numberOfLines={2} className="text-white text-sm">
-                    {item.preview}
-                  </Text>
+                  <View className="flex flex-row justify-between items-center ">
+                    <Text
+                      numberOfLines={2}
+                      className="text-white text-sm w-5/6"
+                    >
+                      {item.last_message?.content || "कुनै सन्देश छैन"}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => onDeleteConversation(item.id)}
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={16}
+                        color="#fca5a5"
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </TouchableOpacity>
             )}
@@ -294,7 +342,10 @@ const Sidebar = ({ visible, onClose, startNewChat, comesFromHistory }) => {
 
         {/* Logout bottom */}
         <View className="absolute bottom-6 left-4 right-4">
-          <TouchableOpacity className="flex-row items-center justify-center bg-red-500/20 p-4 rounded-xl">
+          <TouchableOpacity
+            onPress={handleSignOut}
+            className="flex-row items-center justify-center bg-red-500/20 p-4 rounded-xl"
+          >
             <Ionicons name="log-out-outline" size={20} color="#fca5a5" />
             <Text className="text-red-300 ml-2 font-medium">लगआउट</Text>
           </TouchableOpacity>

@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "Nepali-Sewabot",
+    "name": "Nepali Sewabot",
     "slug": "Nepali-Sewabot",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/heroImg.png",
     "scheme": "nepalisewabot",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -31,7 +31,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/heroImg.pngy",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",

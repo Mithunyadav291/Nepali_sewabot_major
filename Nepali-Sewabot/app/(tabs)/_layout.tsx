@@ -101,7 +101,7 @@
 
 // export default TabLayout;
 
-import { useTheme } from "@/context/ThemeContext";
+// import { useTheme } from "@/context/ThemeContext";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useUserSync } from "@/hooks/useUserSync";
 import { initializeDB } from "@/utils/dbInit";
@@ -128,7 +128,7 @@ const Layout = () => {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" options={{ title: "Home" }} />
-      <Stack.Screen name="history" />
+      {/* <Stack.Screen name="history" /> */}
       <Stack.Screen name="profile" />
     </Stack>
   );

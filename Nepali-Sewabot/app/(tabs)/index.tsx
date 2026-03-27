@@ -9,6 +9,7 @@ import {
   ScrollView,
   TextInput,
   Image,
+  Alert,
 } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -19,29 +20,39 @@ import { scale } from "react-native-size-matters";
 import axios from "axios";
 import * as SQLite from "expo-sqlite";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-// import { useSendMessage } from "@/hooks/useSendMessage";
 import { conversationAPI } from "@/utils/api_rag";
+import { useTheme } from "@/context/ThemeContext";
 import Sidebar from "@/components/Sidebar";
+import * as Speech from "expo-speech";
+import * as Clipboard from "expo-clipboard";
+import ProfileModal from "@/components/ProfileModal";
+import { Keyboard } from "react-native";
 
 const db = SQLite.openDatabaseSync("chat.db");
 
 const ChatScreen = () => {
   const router = useRouter();
   const flatListRef = useRef(null);
+  const { theme } = useTheme();
 
   const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   const [messages, setMessages] = useState([]);
   const [history, setHistory] = useState([]);
   const [activeConversationId, setActiveConversationId] = useState<
     number | null
   >(null);
+  //for history list in sidebar
+  const [conversations, setConversations] = useState([]);
+  const [activeConversation, setActiveConversation] = useState(null);
 
   const [userMessage, setUserMessage] = useState("");
   const [aiTyping, setAiTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadedFromHistory, setLoadedFromHistory] = useState(false);
 
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const { currentUser } = useCurrentUser();
   const tableName = `messages_${currentUser?._id}`;
 
@@ -70,14 +81,14 @@ const ChatScreen = () => {
       db.runSync(
         `INSERT INTO ${tableName} (sender, content, timestamp,session_id) VALUES (?, ?, ?,?);`,
         [
-          latestMessage.sender,
+          latestMessage.role,
           latestMessage.content,
           timestamp,
           activeConversationId,
         ],
       );
 
-      console.log("💾 Message inserted after timeout:", latestMessage.content);
+      // console.log("💾 Message inserted after timeout:", latestMessage.content);
     }, 600); // 2 seconds delay
 
     return () => clearTimeout(timeout); // cleanup on re-render
@@ -87,48 +98,52 @@ const ChatScreen = () => {
     try {
       const response = await conversationAPI.create({ title: "नयाँ कुराकानी" });
       // setConversations([response.data, ...conversations]);
-      setActiveConversationId(response.data.id);
+      const newId = response.data.id;
+
+      setActiveConversationId(newId);
       setMessages([]);
       setHistory([]);
       setSidebarVisible(false); // Close sidebar on mobile
+
+      return newId;
     } catch (error) {
       console.error("Failed to create conversation:", error);
     }
   };
 
-  const comesFromHistory = async (conversationId) => {
-    try {
-      const rows = await db.getAllAsync(
-        `SELECT * FROM ${tableName} WHERE session_id = ? ORDER BY id ASC`,
-        [conversationId],
-      );
-      setMessages(rows);
-      setHistory(rows);
-      setActiveConversationId(conversationId);
-      setLoadedFromHistory(true);
-    } catch (error) {
-      console.error("Failed to load conversation:", error);
-    }
-  };
+  // const comesFromHistory = async (conversationId) => {
+  //   try {
+  //     const rows = await db.getAllAsync(
+  //       `SELECT * FROM ${tableName} WHERE session_id = ? ORDER BY id ASC`,
+  //       [conversationId],
+  //     );
+  //     setMessages(rows);
+  //     setHistory(rows);
+  //     setActiveConversationId(conversationId);
+  //     setLoadedFromHistory(true);
+  //   } catch (error) {
+  //     console.error("Failed to load conversation:", error);
+  //   }
+  // };
 
   const handleSend = async () => {
     if (!userMessage.trim()) {
       alert("Please write a message.");
       return;
     }
-
-    if (!activeConversationId) {
-      await startNewChat();
-      setTimeout(() => sendMessageToConversation(userMessage), 100);
-      return;
+    let conversationId = activeConversationId;
+    if (!conversationId) {
+      // Create new conversation and get its ID
+      conversationId = await startNewChat();
+      if (!conversationId) return; // failed to create
     }
 
-    await sendMessageToConversation(userMessage);
+    await sendMessageToConversation(userMessage, conversationId);
   };
 
-  const sendMessageToConversation = async (userMessage) => {
+  const sendMessageToConversation = async (userMessage, conversationId) => {
     const userMsg = {
-      sender: "user",
+      role: "user",
       content: userMessage.trim(),
     };
 
@@ -143,7 +158,7 @@ const ChatScreen = () => {
       setAiTyping(true);
 
       const res = await conversationAPI.addMessage(
-        activeConversationId,
+        activeConversationId || conversationId,
         userMessage.trim(),
         true,
       );
@@ -152,7 +167,7 @@ const ChatScreen = () => {
       const aiText = res?.data.assistant_message.content || "No response";
 
       const aiMsg = {
-        sender: "assistant",
+        role: "assistant",
         content: aiText,
       };
 
@@ -168,20 +183,88 @@ const ChatScreen = () => {
   };
 
   const handleVoiceScreen = () => {
-    if (activeConversationId) {
-      router.push({
-        pathname: "/(chatVoiceScreen)/voice",
-        params: { activeConversationId },
-      });
-    } else {
-      router.push({
-        pathname: "/(chatVoiceScreen)/voice",
-        params: { activeConversationId },
-      });
+    router.push({
+      pathname: "/(chatVoiceScreen)/voice",
+      params: { activeConId: activeConversationId },
+    });
+  };
+
+  const loadConversations = async () => {
+    try {
+      const response = await conversationAPI.list();
+      setConversations(response.data);
+    } catch (error) {
+      console.error("Failed to load conversations:", error);
     }
   };
+
+  const loadConversation = async (id) => {
+    try {
+      const response = await conversationAPI.get(id);
+      setActiveConversation(response.data);
+      setActiveConversationId(response.data.id);
+      setMessages(response.data.messages);
+      setLoadedFromHistory(true);
+      setSidebarVisible(false); // Close sidebar on mobile after selection
+    } catch (error) {
+      console.error("Failed to load conversation:", error);
+    }
+  };
+
+  const handleDeleteConversation = async (conversationId) => {
+    try {
+      await conversationAPI.delete(conversationId);
+      setConversations((prev) => prev.filter((c) => c.id !== conversationId));
+
+      if (activeConversation?.id === conversationId) {
+        setActiveConversation(null);
+        setActiveConversationId(null);
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error("Failed to delete conversation:", error);
+      alert("कुराकानी मेटाउन असफल भयो।");
+    }
+  };
+
+  const confirmDeleteConversation = (conversationId) => {
+    Alert.alert(
+      "सन्देश मेटाउनुहोस्",
+      "के तपाईं यो सन्देश  मेटाउन निश्चित हुनुहुन्छ?",
+      [
+        { text: "रद्द गर्नुहोस्", style: "cancel" },
+        {
+          text: "मेटाउनुहोस्",
+          style: "destructive",
+          onPress: () => handleDeleteConversation(conversationId),
+        },
+      ],
+      { cancelable: true },
+    );
+  };
+
+  useEffect(() => {
+    loadConversations();
+  }, []);
   const renderItem = ({ item }) => {
-    const isUser = item.sender === "user";
+    const isUser = item.role === "user";
+
+    const speakResponse = () => {
+      if (item.role === "assistant") {
+        Speech.speak(item.content, { language: "ne-NP" });
+        setIsSpeaking(true);
+      }
+    };
+
+    const stopSpeech = () => {
+      Speech.stop();
+      setIsSpeaking(false);
+    };
+
+    const copyText = async () => {
+      await Clipboard.setStringAsync(item.content);
+      Alert.alert("Copied!", "Message copied to clipboard.");
+    };
 
     return (
       <View
@@ -210,14 +293,15 @@ const ChatScreen = () => {
             // 🧠 chat shape
             borderTopRightRadius: isUser ? 4 : 18,
             borderTopLeftRadius: isUser ? 18 : 4,
+            paddingBottom: 24,
           }}
-          className={isUser ? "bg-blue-500" : "bg-gray-200"}
+          className={isUser ? "bg-slate-600" : "bg-gray-200"}
         >
           {/* Sender Label */}
           <Text
             className={`text-xs ${isUser ? "text-white" : "text-gray-600"}`}
           >
-            {item.sender === "user" ? "You" : "Assistant"}
+            {item.role === "user" ? "You" : "Assistant"}
           </Text>
           {/* Markdown */}
           <Markdown
@@ -229,13 +313,46 @@ const ChatScreen = () => {
           >
             {item.content}
           </Markdown>
+
+          <View
+            style={{
+              position: "absolute",
+              bottom: 8,
+              right: 12,
+              flexDirection: "row",
+            }}
+          >
+            {/* Copy button */}
+            <TouchableOpacity onPress={copyText} style={{ marginRight: 8 }}>
+              <Ionicons
+                name="copy-outline"
+                size={20}
+                color={isUser ? "#fff" : "#475569"}
+              />
+            </TouchableOpacity>
+
+            {/* Assistant Mic */}
+            {!isUser &&
+              (isSpeaking ? (
+                <TouchableOpacity onPress={stopSpeech}>
+                  <Ionicons name="stop-circle-outline" size={20} color="red" />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  onPress={speakResponse}
+                  // style={{ marginRight: 8 }}
+                >
+                  <Ionicons name="mic-outline" size={20} color="#475569" />
+                </TouchableOpacity>
+              ))}
+          </View>
         </View>
       </View>
     );
   };
   return (
     <>
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-white dark:bg-black">
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "padding"}
           style={{ flex: 1 }}
@@ -251,12 +368,12 @@ const ChatScreen = () => {
               justifyContent: "space-between",
               paddingHorizontal: 18,
             }}
-            className="bg-blue-700"
+            className="bg-slate-800 dark:bg-slate-900"
           >
             <View className="flex flex-row items-center gap-4 ">
               <TouchableOpacity
                 onPress={() => setSidebarVisible(true)}
-                className="bg-blue-500 p-2 rounded-lg"
+                className="bg-slate-600 p-2 rounded-lg"
               >
                 <Ionicons name="menu" size={26} color="white" />
               </TouchableOpacity>
@@ -275,7 +392,10 @@ const ChatScreen = () => {
               </View>
             </View>
 
-            <TouchableOpacity className="bg-gray-500 p-2 rounded-lg">
+            <TouchableOpacity
+              onPress={() => setShowProfileModal(true)}
+              className="bg-gray-500 p-2 rounded-lg"
+            >
               <Ionicons name="settings" size={26} color="white" />
             </TouchableOpacity>
           </View>
@@ -297,7 +417,8 @@ const ChatScreen = () => {
               />
 
               <Text
-                style={{ fontSize: 26, fontWeight: "bold", color: "#1D4ED8" }}
+                style={{ fontSize: 26, fontWeight: "bold" }}
+                className="text-slate-600 dark:text-white"
               >
                 नमस्कार! म SevaBot हुँ
               </Text>
@@ -311,20 +432,22 @@ const ChatScreen = () => {
                   marginTop: 20,
                   padding: 20,
                   borderRadius: 20,
-                  backgroundColor: "#EFF6FF",
+                  // backgroundColor: "#EFF6FF",
                   borderWidth: 1,
                   borderColor: "#BFDBFE",
                   width: "100%",
                 }}
+                className="bg-slate-200 dark:bg-black dark:text-white"
               >
                 {/* Title */}
                 <Text
                   style={{
                     fontWeight: "bold",
                     fontSize: 16,
-                    color: "#1E3A8A",
+
                     marginBottom: 15,
                   }}
+                  className="text-slate-600 dark:text-white"
                 >
                   कसरी प्रयोग गर्ने:
                 </Text>
@@ -334,14 +457,22 @@ const ChatScreen = () => {
                   <Ionicons
                     name="chatbubble-outline"
                     size={26}
-                    color="#1D4ED8"
+                    color={theme === "dark" ? "#e5e7eb" : "#475569"}
                   />
 
                   <View style={{ marginLeft: 12, flex: 1 }}>
-                    <Text style={{ fontWeight: "bold", color: "#1E40AF" }}>
+                    <Text
+                      style={{ fontWeight: "bold" }}
+                      className="text-slate-600 dark:text-white"
+                    >
                       १. कुराकानी सुरु गर्नुहोस्
                     </Text>
-                    <Text style={{ color: "#6B7280", fontSize: 13 }}>
+                    <Text
+                      style={{
+                        color: theme === "dark" ? "#9ca3af" : "#6B7280",
+                        fontSize: 13,
+                      }}
+                    >
                       तलको box मा नेपालीमा प्रश्न लेख्नुहोस्
                     </Text>
                   </View>
@@ -349,13 +480,25 @@ const ChatScreen = () => {
 
                 {/* Item 2 */}
                 <View style={{ flexDirection: "row", marginBottom: 15 }}>
-                  <Ionicons name="mic-outline" size={26} color="#1D4ED8" />
+                  <Ionicons
+                    name="mic-outline"
+                    size={26}
+                    color={theme === "dark" ? "#e5e7eb" : "#475569"}
+                  />
 
                   <View style={{ marginLeft: 12, flex: 1 }}>
-                    <Text style={{ fontWeight: "bold", color: "#1E40AF" }}>
+                    <Text
+                      style={{ fontWeight: "bold" }}
+                      className="text-slate-600 dark:text-white"
+                    >
                       २. नेपालीमा प्रश्न सोध्नुहोस्
                     </Text>
-                    <Text style={{ color: "#6B7280", fontSize: 13 }}>
+                    <Text
+                      style={{
+                        color: theme === "dark" ? "#9ca3af" : "#6B7280",
+                        fontSize: 13,
+                      }}
+                    >
                       डिजिटल नागरिक बडापत्र विषयमा प्रश्न सोध्नुहोस्
                     </Text>
                   </View>
@@ -366,14 +509,22 @@ const ChatScreen = () => {
                   <Ionicons
                     name="information-circle-outline"
                     size={26}
-                    color="#1D4ED8"
+                    color={theme === "dark" ? "#e5e7eb" : "#475569"}
                   />
 
                   <View style={{ marginLeft: 12, flex: 1 }}>
-                    <Text style={{ fontWeight: "bold", color: "#1E40AF" }}>
+                    <Text
+                      style={{ fontWeight: "bold" }}
+                      className="text-slate-600 dark:text-white"
+                    >
                       ३. उत्तर पाउनुहोस्
                     </Text>
-                    <Text style={{ color: "#6B7280", fontSize: 13 }}>
+                    <Text
+                      style={{
+                        color: theme === "dark" ? "#9ca3af" : "#6B7280",
+                        fontSize: 13,
+                      }}
+                    >
                       RAG प्रणालीद्वारा सही उत्तर पाउनुहोस्
                     </Text>
                   </View>
@@ -396,7 +547,7 @@ const ChatScreen = () => {
           )}
 
           {aiTyping && (
-            <View className=" flex-row mx-4  ">
+            <View className=" flex-row mx-4  mb-1 animate-pulse ">
               <View className="bg-gray-200 p-2 rounded-full">
                 <Text>assistant is thinking...</Text>
               </View>
@@ -407,13 +558,12 @@ const ChatScreen = () => {
 
           <View
             style={{ paddingHorizontal: 10, paddingBottom: 4 }}
-            className="bg-white"
+            className="bg-white dark:bg-black"
           >
-            {/* 🔹 Top Border Line */}
             <View
               style={{
                 height: 1,
-                backgroundColor: "#E5E7EB",
+                backgroundColor: theme === "dark" ? "#374151" : "#E5E7EB",
                 marginBottom: 8,
               }}
             />
@@ -423,25 +573,25 @@ const ChatScreen = () => {
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                backgroundColor: "#F9FAFB",
+                backgroundColor: theme === "dark" ? "#1f2937" : "#F9FAFB",
                 borderRadius: 30,
                 paddingHorizontal: 16,
                 paddingVertical: 6,
                 borderWidth: 1,
-                borderColor: "#E5E7EB",
+                borderColor: theme === "dark" ? "#374151" : "#E5E7EB",
               }}
             >
               {/* ✏️ Input */}
               <TextInput
                 placeholder="आफ्नो प्रश्न नेपालीमा सोध्नुहोस्..."
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={theme === "dark" ? "#6b7280" : "#9CA3AF"}
                 multiline
                 value={userMessage}
                 onChangeText={setUserMessage}
                 style={{
                   flex: 1,
                   fontSize: 15,
-                  color: "#111827",
+                  color: theme === "dark" ? "#f3f4f6" : "#111827",
                   paddingHorizontal: 10,
                   paddingVertical: 6,
                   maxHeight: 100,
@@ -453,19 +603,26 @@ const ChatScreen = () => {
                 onPress={handleVoiceScreen}
                 style={{ marginHorizontal: 12 }}
               >
-                <Ionicons name="mic-outline" size={28} color="#2563EB" />
+                <Ionicons
+                  name="mic-outline"
+                  size={28}
+                  color={theme === "dark" ? "#9ca3af" : "#475569"}
+                />
               </TouchableOpacity>
 
               {/* 📩 SEND BUTTON */}
               <TouchableOpacity
-                onPress={handleSend}
+                onPress={() => {
+                  handleSend();
+                  Keyboard.dismiss(); // 👈 close keyboard
+                }}
                 disabled={!userMessage.trim()}
                 style={{
                   padding: 10,
 
                   opacity: userMessage.trim() ? 1 : 0.5,
                 }}
-                className="rounded-lg bg-blue-500"
+                className="rounded-lg bg-slate-800"
               >
                 <Feather name="send" size={24} color="white" />
               </TouchableOpacity>
@@ -478,7 +635,16 @@ const ChatScreen = () => {
         visible={sidebarVisible}
         onClose={() => setSidebarVisible(false)}
         startNewChat={startNewChat}
-        comesFromHistory={comesFromHistory}
+        // comesFromHistory={comesFromHistory}
+        conversations={conversations}
+        activeConversation={activeConversation}
+        onDeleteConversation={confirmDeleteConversation}
+        onSelectConversation={loadConversation}
+        loadConversations={loadConversations}
+      />
+      <ProfileModal
+        visible={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
       />
     </>
   );
